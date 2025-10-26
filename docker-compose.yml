@@ -1,0 +1,67 @@
+services:
+  db:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: bookstore
+      MYSQL_USER: bookstore_user
+      MYSQL_PASSWORD: bookstore_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - bookstore_net
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    networks:
+      - bookstore_net
+
+  store:
+    build: ./services/store_service
+    restart: always
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=mysql+pymysql://bookstore_user:bookstore_pass@db/bookstore
+      - RABBITMQ_URL=amqp://rabbitmq
+    ports:
+      - "5003:5000"
+    depends_on:
+      - db
+      - rabbitmq
+    networks:
+      - bookstore_net
+
+  catalog:
+    build: ./services/catalog_service
+    restart: always
+    environment:
+      - FLASK_ENV=development
+      - RABBITMQ_URL=amqp://rabbitmq
+    ports:
+      - "5002:5002"
+    depends_on:
+      - rabbitmq
+    networks:
+      - bookstore_net
+
+  auth:
+    build: ./services/auth_service
+    restart: always
+    environment:
+      - FLASK_ENV=development
+    ports:
+      - "5001:5001"
+    networks:
+      - bookstore_net
+
+volumes:
+  db_data:
+
+networks:
+  bookstore_net:
