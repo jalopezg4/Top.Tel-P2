@@ -52,8 +52,9 @@ def login():
                     'id': user_data.get('id'),
                     'username': user_data.get('username'),
                     'email': email,
-                    'name': user_data.get('username')  # Usar username como name
+                    'name': user_data.get('name') or user_data.get('username')  # Usar name si existe, sino username
                 }
+                flash('Inicio de sesión exitoso')
                 return redirect(url_for('catalog'))
             else:
                 flash('Login failed')
@@ -72,11 +73,12 @@ def register():
         try:
             response = requests.post(
                 f'{AUTH_SERVICE_URL}/register',
-                json={'username': email, 'password': password},
+                json={'username': email, 'password': password, 'name': name},
                 timeout=5
             )
             
             if response.status_code == 201:
+                flash('Registro exitoso. Por favor inicia sesión.')
                 return redirect(url_for('login'))
             else:
                 flash('Error al registrar usuario')
@@ -325,13 +327,13 @@ def list_users():
         response = requests.get(f'{AUTH_SERVICE_URL}/users', timeout=5)
         if response.status_code == 200:
             users_data = response.json()
-            # Formatear los datos para el template (agregar 'name' y 'email' basados en username)
+            # Ahora el auth_service ya retorna name, username y id
             users = []
             for user in users_data:
                 users.append({
                     'id': user['id'],
-                    'name': user['username'],  # En el template esperamos 'name'
-                    'email': user['username']  # En el template esperamos 'email'
+                    'name': user.get('name') or user['username'],  # Usar name si existe, sino username
+                    'email': user['username']  # username es el email
                 })
             return render_template('list_users.html', users=users)
         else:
