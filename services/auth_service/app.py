@@ -49,7 +49,12 @@ def login():
     # For now return a simple success message; token-based auth can be added later
     return jsonify({'message': 'logged_in', 'user': {'id': u.id, 'username': u.username}})
 
+@app.route('/users', methods=['GET'])
+def list_users():
+    users = User.query.all()
+    return jsonify([{'id': u.id, 'username': u.username} for u in users])
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

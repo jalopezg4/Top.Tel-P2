@@ -59,11 +59,21 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     author = db.Column(db.String(200))
+    description = db.Column(db.Text)
     price = db.Column(db.Float, default=0.0)
     stock = db.Column(db.Integer, default=0)
+    seller_id = db.Column(db.Integer)  # ID del usuario que vende el libro
 
     def to_dict(self):
-        return {"id": self.id, "title": self.title, "author": self.author, "price": self.price, "stock": self.stock}
+        return {
+            "id": self.id, 
+            "title": self.title, 
+            "author": self.author, 
+            "description": self.description,
+            "price": self.price, 
+            "stock": self.stock,
+            "seller_id": self.seller_id
+        }
 
 @app.route('/')
 def index():
@@ -85,7 +95,14 @@ def create_book():
     data = request.get_json() or {}
     if 'title' not in data:
         abort(400, 'title is required')
-    book = Book(title=data['title'], author=data.get('author'), price=data.get('price', 0.0), stock=data.get('stock', 0))
+    book = Book(
+        title=data['title'], 
+        author=data.get('author'), 
+        description=data.get('description'),
+        price=data.get('price', 0.0), 
+        stock=data.get('stock', 0),
+        seller_id=data.get('seller_id')
+    )
     db.session.add(book)
     db.session.commit()
     # Publish book created event
@@ -99,8 +116,11 @@ def update_book(book_id):
     data = request.get_json() or {}
     book.title = data.get('title', book.title)
     book.author = data.get('author', book.author)
+    book.description = data.get('description', book.description)
     book.price = data.get('price', book.price)
     book.stock = data.get('stock', book.stock)
+    if 'seller_id' in data:
+        book.seller_id = data.get('seller_id')
     db.session.commit()
     # Publish book updated event
     book_data = book.to_dict()

@@ -11,6 +11,12 @@ services:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bookstore_net
 
@@ -22,7 +28,7 @@ services:
     networks:
       - bookstore_net
 
-  store:
+  store_service:
     build: ./services/store_service
     restart: always
     environment:
@@ -30,33 +36,53 @@ services:
       - DATABASE_URL=mysql+pymysql://bookstore_user:bookstore_pass@db/bookstore
       - RABBITMQ_URL=amqp://rabbitmq
     ports:
-      - "5003:5000"
+      - "5002:5000"
     depends_on:
-      - db
-      - rabbitmq
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
     networks:
       - bookstore_net
 
-  catalog:
+  catalog_service:
     build: ./services/catalog_service
     restart: always
     environment:
       - FLASK_ENV=development
       - RABBITMQ_URL=amqp://rabbitmq
     ports:
-      - "5002:5002"
+      - "5001:5000"
     depends_on:
       - rabbitmq
     networks:
       - bookstore_net
 
-  auth:
+  auth_service:
     build: ./services/auth_service
     restart: always
     environment:
       - FLASK_ENV=development
     ports:
-      - "5001:5001"
+      - "5000:5000"
+    networks:
+      - bookstore_net
+
+  frontend_gateway:
+    build: ./services/frontend_gateway
+    restart: always
+    environment:
+      - FLASK_ENV=development
+      - AUTH_SERVICE_URL=http://auth_service:5000
+      - CATALOG_SERVICE_URL=http://catalog_service:5000
+      - STORE_SERVICE_URL=http://store_service:5000
+      - SECRET_KEY=secretkey-for-frontend
+    ports:
+      - "5003:5003"
+    depends_on:
+      - auth_service
+      - catalog_service
+      - store_service
     networks:
       - bookstore_net
 

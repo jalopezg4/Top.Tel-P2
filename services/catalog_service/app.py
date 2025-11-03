@@ -27,16 +27,20 @@ def process_book_event(ch, method, properties, body):
                 book = Book(id=book_data['id'],
                            title=book_data['title'],
                            author=book_data['author'],
+                           description=book_data.get('description'),
                            price=book_data['price'],
-                           stock=book_data['stock'])
+                           stock=book_data['stock'],
+                           seller_id=book_data.get('seller_id'))
                 db.session.merge(book)
             elif event_type == 'book_updated':
                 book = Book.query.get(book_data['id'])
                 if book:
                     book.title = book_data['title']
                     book.author = book_data['author']
+                    book.description = book_data.get('description')
                     book.price = book_data['price']
                     book.stock = book_data['stock']
+                    book.seller_id = book_data.get('seller_id')
             elif event_type == 'book_deleted':
                 book = Book.query.get(book_data['id'])
                 if book:
@@ -81,15 +85,30 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
     author = db.Column(db.String(200))
+    description = db.Column(db.Text)
     price = db.Column(db.Float)
     stock = db.Column(db.Integer)
+    seller_id = db.Column(db.Integer)
 
     def to_dict(self):
-        return {"id": self.id, "title": self.title, "author": self.author, "price": self.price, "stock": self.stock}
+        return {
+            "id": self.id, 
+            "title": self.title, 
+            "author": self.author, 
+            "description": self.description,
+            "price": self.price, 
+            "stock": self.stock,
+            "seller_id": self.seller_id
+        }
 
 @app.route('/')
 def index():
     return jsonify({"service": "catalog", "status": "ok"})
+
+@app.route('/books')
+def get_books():
+    books = Book.query.all()
+    return jsonify([b.to_dict() for b in books])
 
 @app.route('/catalog')
 def catalog():
@@ -106,4 +125,4 @@ if __name__ == '__main__':
     consumer_thread = threading.Thread(target=start_event_consumer, daemon=True)
     consumer_thread.start()
     
-    app.run(host='0.0.0.0', port=5002, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
