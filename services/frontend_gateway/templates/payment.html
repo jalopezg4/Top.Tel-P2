@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Payment Page</h2>
+<div class="card mb-4">
+  <div class="card-body">
+    <h5 class="card-title">Purchase Details</h5>
+    <p><strong>Book:</strong> {{ purchase.book_title }}</p>
+    <p><strong>Quantity:</strong> {{ purchase.quantity }}</p>
+    <p><strong>Total Amount:</strong> ${{ purchase.total_price }}</p>
+  </div>
+</div>
+<form method="POST">
+  <div class="mb-3">
+    <label>Payment Method:</label>
+    <select name="method" class="form-control" required>
+      <option value="Credit Card">Credit Card</option>
+      <option value="Paypal">Paypal</option>
+      <option value="Bank Transfer">Bank Transfer</option>
+    </select>
+  </div>
+  <input type="hidden" name="amount" value="{{ purchase.total_price }}">
+  <button type="submit" class="btn btn-primary">Pay Now</button>
+</form>
+{% endblock %}

@@ -60,6 +60,23 @@ services:
     networks:
       - bookstore_net
 
+  frontend:
+    build: ./services/frontend_gateway
+    restart: always
+    environment:
+      - FLASK_ENV=development
+      - AUTH_SERVICE_URL=http://auth:5001
+      - CATALOG_SERVICE_URL=http://catalog:5002
+      - STORE_SERVICE_URL=http://store:5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - auth
+      - catalog
+      - store
+    networks:
+      - bookstore_net
+
 volumes:
   db_data:
 
