@@ -13,6 +13,7 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
 
     def check_password(self, password):
@@ -26,28 +27,37 @@ def index():
 def register():
     data = request.get_json() or {}
     username = data.get('username')
+    email = data.get('email')
     password = data.get('password')
-    if not username or not password:
-        abort(400, 'username and password required')
+    if not username or not password or not email:
+        abort(400, 'username, email and password required')
     if User.query.filter_by(username=username).first():
         abort(400, 'username already exists')
-    u = User(username=username, password_hash=generate_password_hash(password))
+    if User.query.filter_by(email=email).first():
+        abort(400, 'email already exists')
+    u = User(username=username, email=email, password_hash=generate_password_hash(password))
     db.session.add(u)
     db.session.commit()
-    return jsonify({'id': u.id, 'username': u.username}), 201
+    return jsonify({'id': u.id, 'username': u.username, 'email': u.email}), 201
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
-    username = data.get('username')
+    email = data.get('email')
     password = data.get('password')
-    if not username or not password:
-        abort(400, 'username and password required')
-    u = User.query.filter_by(username=username).first()
+    if not email or not password:
+        abort(400, 'email and password required')
+    u = User.query.filter_by(email=email).first()
     if not u or not u.check_password(password):
         abort(401, 'invalid credentials')
     # For now return a simple success message; token-based auth can be added later
-    return jsonify({'message': 'logged_in', 'user': {'id': u.id, 'username': u.username}})
+    return jsonify({'message': 'logged_in', 'user': {'id': u.id, 'username': u.username, 'email': u.email}})
+
+@app.route('/users', methods=['GET'])
+def get_users():
+    """Obtiene la lista de todos los usuarios registrados"""
+    users = User.query.all()
+    return jsonify([{'id': u.id, 'username': u.username, 'email': u.email} for u in users])
 
 if __name__ == '__main__':
     with app.app_context():

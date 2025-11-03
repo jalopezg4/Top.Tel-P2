@@ -27,6 +27,7 @@ def process_book_event(ch, method, properties, body):
                 book = Book(id=book_data['id'],
                            title=book_data['title'],
                            author=book_data['author'],
+                           description=book_data.get('description'),
                            price=book_data['price'],
                            stock=book_data['stock'])
                 db.session.merge(book)
@@ -35,6 +36,7 @@ def process_book_event(ch, method, properties, body):
                 if book:
                     book.title = book_data['title']
                     book.author = book_data['author']
+                    book.description = book_data.get('description')
                     book.price = book_data['price']
                     book.stock = book_data['stock']
             elif event_type == 'book_deleted':
@@ -81,11 +83,12 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200))
     author = db.Column(db.String(200))
+    description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float)
     stock = db.Column(db.Integer)
 
     def to_dict(self):
-        return {"id": self.id, "title": self.title, "author": self.author, "price": self.price, "stock": self.stock}
+        return {"id": self.id, "title": self.title, "author": self.author, "description": self.description, "price": self.price, "stock": self.stock}
 
 @app.route('/')
 def index():

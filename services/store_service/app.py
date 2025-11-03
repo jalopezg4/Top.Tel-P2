@@ -59,11 +59,21 @@ class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     author = db.Column(db.String(200))
+    description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float, default=0.0)
     stock = db.Column(db.Integer, default=0)
+    user_id = db.Column(db.Integer, nullable=False)
 
     def to_dict(self):
-        return {"id": self.id, "title": self.title, "author": self.author, "price": self.price, "stock": self.stock}
+        return {
+            "id": self.id,
+            "title": self.title,
+            "author": self.author,
+            "description": self.description,
+            "price": self.price,
+            "stock": self.stock,
+            "user_id": self.user_id
+        }
 
 @app.route('/')
 def index():
@@ -72,7 +82,11 @@ def index():
 # CRUD endpoints for books
 @app.route('/books', methods=['GET'])
 def list_books():
-    books = Book.query.all()
+    user_id = request.args.get('user_id', type=int)
+    if user_id is not None:
+        books = Book.query.filter_by(user_id=user_id).all()
+    else:
+        books = Book.query.all()
     return jsonify([b.to_dict() for b in books])
 
 @app.route('/books/<int:book_id>', methods=['GET'])
@@ -85,7 +99,16 @@ def create_book():
     data = request.get_json() or {}
     if 'title' not in data:
         abort(400, 'title is required')
-    book = Book(title=data['title'], author=data.get('author'), price=data.get('price', 0.0), stock=data.get('stock', 0))
+    if 'user_id' not in data:
+        abort(400, 'user_id is required')
+    book = Book(
+        title=data['title'],
+        author=data.get('author'),
+        description=data.get('description'),
+        price=data.get('price', 0.0),
+        stock=data.get('stock', 0),
+        user_id=data['user_id']
+    )
     db.session.add(book)
     db.session.commit()
     # Publish book created event
@@ -99,6 +122,7 @@ def update_book(book_id):
     data = request.get_json() or {}
     book.title = data.get('title', book.title)
     book.author = data.get('author', book.author)
+    book.description = data.get('description', book.description)
     book.price = data.get('price', book.price)
     book.stock = data.get('stock', book.stock)
     db.session.commit()
