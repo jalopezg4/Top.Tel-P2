@@ -27,6 +27,9 @@ Sistema de tienda de libros implementado con una arquitectura de microservicios.
   - POST /register - Registro de usuario
   - POST /login - Login de usuario
 
+### 4.Frontend
+- Parte visual de la app para que se vea como la monolitica.
+  
 ## Infraestructura
 
 - **RabbitMQ**: Message broker para CQRS
